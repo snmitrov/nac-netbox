@@ -244,6 +244,17 @@ jobs:
           terraform init -input=false
           terraform apply -input=false -auto-approve plan.tfplan
 
+      - name: Upload Terraform state
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: terraform-state
+          path: |
+            terraform.tfstate
+            .terraform.lock.hcl
+          retention-days: 90
+          overwrite: true
+
       - name: Terraform destroy (rollback on failure)
         if: failure() && steps.apply.outcome == 'failure'
         run: |
@@ -277,6 +288,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Download Terraform state
+        uses: actions/download-artifact@v5
+        with:
+          name: terraform-state
+          path: .
 
       - name: Run idempotency check
         run: |
@@ -390,6 +407,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Download Terraform state
+        continue-on-error: true
+        uses: actions/download-artifact@v5
+        with:
+          name: terraform-state
+          path: .
 
       - name: Send Webex failure notification
         env:

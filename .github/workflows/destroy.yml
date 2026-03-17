@@ -41,14 +41,15 @@ env:
   TF_IN_AUTOMATION: "true"
   TF_TOKEN_app_terraform_io: ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
   # ── !env-referenced vars ──────────────────────────────────────────────
-  org_name:              ${{ secrets.ORG_NAME }}
-  vpn_hub_network_name:  ${{ secrets.VPN_HUB_NETWORK_NAME }}
-  branch1_mx_serial:     ${{ secrets.BRANCH1_MX_SERIAL }}
-  branch1_ms_serial:     ${{ secrets.BRANCH1_MS_SERIAL }}
-  branch1_cw_serial:     ${{ secrets.BRANCH1_CW_SERIAL }}
-  branch2_mx_serial:     ${{ secrets.BRANCH2_MX_SERIAL }}
-  branch2_ms_serial:     ${{ secrets.BRANCH2_MS_SERIAL }}
-  branch2_cw_serial:     ${{ secrets.BRANCH2_CW_SERIAL }}
+  org_name:              Org-3665367146726165084
+  vpn_hub_network_name:  Datacenter
+  branch1_mx_serial:     XXXX-XXXX-XXXX
+  branch1_ms_serial:     XXXX-XXXX-XXXX
+  branch1_cw_serial:     XXXX-XXXX-XXXX
+  branch2_mx_serial:     XXXX-XXXX-XXXX
+  branch2_ms_serial:     XXXX-XXXX-XXXX
+  branch2_cw_serial:     XXXX-XXXX-XXXX
+  MERAKI_API_KEY:        REDACTED_MERAKI_API_KEY
   # ── Webex notification ─────────────────────────────────────────────────
   WEBEX_ROOM_ID: "REDACTED_WEBEX_ROOM_ID"
 
@@ -72,6 +73,15 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Download Terraform state from last deploy
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: pipeline.yml
+          name: terraform-state
+          path: .
+          search_artifacts: true
+          if_no_artifact_found: fail
 
       - name: Terraform init
         run: terraform init -input=false
