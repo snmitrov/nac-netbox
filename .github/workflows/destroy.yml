@@ -3,7 +3,7 @@
 # Manually triggered workflow to destroy all Terraform-managed resources
 ###############################################################################
 
-name: NAC Branch Destroy
+name: Destroy Created Branches
 
 on:
   workflow_dispatch:
