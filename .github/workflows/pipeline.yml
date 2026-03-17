@@ -55,14 +55,23 @@ env:
   # BRANCH2_CW_SERIAL         – Branch 2 CW access point serial
 
   # Pass !env-referenced vars so the NAC YAML engine can resolve them
-  org_name:              ${{ secrets.ORG_NAME }}
-  vpn_hub_network_name:  ${{ secrets.VPN_HUB_NETWORK_NAME }}
-  branch1_mx_serial:     ${{ secrets.BRANCH1_MX_SERIAL }}
-  branch1_ms_serial:     ${{ secrets.BRANCH1_MS_SERIAL }}
-  branch1_cw_serial:     ${{ secrets.BRANCH1_CW_SERIAL }}
-  branch2_mx_serial:     ${{ secrets.BRANCH2_MX_SERIAL }}
-  branch2_ms_serial:     ${{ secrets.BRANCH2_MS_SERIAL }}
-  branch2_cw_serial:     ${{ secrets.BRANCH2_CW_SERIAL }}
+  # org_name:              ${{ secrets.ORG_NAME }}
+  # vpn_hub_network_name:  ${{ secrets.VPN_HUB_NETWORK_NAME }}
+  # branch1_mx_serial:     ${{ secrets.BRANCH1_MX_SERIAL }}
+  # branch1_ms_serial:     ${{ secrets.BRANCH1_MS_SERIAL }}
+  # branch1_cw_serial:     ${{ secrets.BRANCH1_CW_SERIAL }}
+  # branch2_mx_serial:     ${{ secrets.BRANCH2_MX_SERIAL }}
+  # branch2_ms_serial:     ${{ secrets.BRANCH2_MS_SERIAL }}
+  # branch2_cw_serial:     ${{ secrets.BRANCH2_CW_SERIAL }}
+  org_name:              Org-3665367146726165084
+  vpn_hub_network_name:  Datacenter
+  branch1_mx_serial:     XXXX-XXXX-XXXX
+  branch1_ms_serial:     XXXX-XXXX-XXXX
+  branch1_cw_serial:     XXXX-XXXX-XXXX
+  branch2_mx_serial:     XXXX-XXXX-XXXX
+  branch2_ms_serial:     XXXX-XXXX-XXXX
+  branch2_cw_serial:     branch2_cw_serial=XXXX-XXXX-XXXX
+  MERAKI_API_KEY:         REDACTED_MERAKI_API_KEY
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────
