@@ -5,10 +5,7 @@
 name: NAC Branch Pipeline
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
@@ -240,9 +237,29 @@ jobs:
           path: .
 
       - name: Terraform apply
+        id: apply
         run: |
           terraform init -input=false
           terraform apply -input=false -auto-approve plan.tfplan
+
+      - name: Terraform destroy (rollback on failure)
+        if: failure() && steps.apply.outcome == 'failure'
+        run: |
+          echo "❌ Deploy failed – destroying all Terraform-managed resources to revert changes..."
+          terraform destroy -auto-approve -input=false
+
+      - name: Send Webex rollback notification
+        if: failure() && steps.apply.outcome == 'failure'
+        env:
+          WEBEX_TOKEN: ${{ secrets.WEBEX_TOKEN }}
+        run: |
+          curl -s -X POST "https://webexapis.com/v1/messages" \
+            -H "Authorization: Bearer ${WEBEX_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"roomId\": \"${WEBEX_ROOM_ID}\",
+              \"markdown\": \"🔥 **Deploy Failed – Resources Destroyed (Rollback)**\n\n- Repository: ${{ github.repository }}\n- Branch: ${{ github.ref_name }}\n- Commit: ${{ github.sha }}\n- Author: ${{ github.actor }}\n- [Workflow Run #${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\"
+            }"
 
   # ───────────────────────────────────────────────────────────────────────
   # Job 5a – Integration tests (runs in parallel with idempotency)
