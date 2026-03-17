@@ -2,7 +2,7 @@
 # GitHub Actions Workflow – bac-lab
 ###############################################################################
 
-name: NAC Branch Pipeline
+name: Deploy Branch as Code
 
 on:
   workflow_dispatch:
@@ -12,6 +12,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # ── Force Node.js 24 for all JavaScript-based actions ─────────────────
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   # ── Organisation / domain ──────────────────────────────────────────────
   domain:          "USA-DEMO"
   org:             "netascode"
@@ -83,7 +85,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Merge YAML data model
         working-directory: workspaces
@@ -113,7 +115,7 @@ jobs:
           chmod 644 merged_configuration.nac.yaml
 
       - name: Upload merged configuration
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: merged-config
           path: workspaces/merged_configuration.nac.yaml
@@ -132,10 +134,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download merged configuration
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: merged-config
           path: workspaces
@@ -164,7 +166,7 @@ jobs:
 
       - name: Upload validation artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: validate-outputs
           path: |
@@ -185,10 +187,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download merged configuration
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: merged-config
           path: workspaces
@@ -205,7 +207,7 @@ jobs:
 
       - name: Upload plan artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: plan-outputs
           path: |
@@ -228,10 +230,10 @@ jobs:
     environment: production       # Use a GitHub Environment with required reviewers for manual approval
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download plan
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: plan-outputs
           path: .
@@ -262,7 +264,7 @@ jobs:
             }"
 
   # ───────────────────────────────────────────────────────────────────────
-  # Job 5a – Integration tests (runs in parallel with idempotency)
+  # Job 5a – Integration tests
   # ───────────────────────────────────────────────────────────────────────
   integration-test:
     name: Integration Test
@@ -274,10 +276,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download merged configuration
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: merged-config
           path: workspaces
@@ -291,7 +293,7 @@ jobs:
 
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: integration-test-results
           path: |
@@ -302,18 +304,18 @@ jobs:
 
       - name: Publish test report
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
         with:
           name: Integration Test Results
           path: tests/results/xunit.xml
           reporter: java-junit
 
   # ───────────────────────────────────────────────────────────────────────
-  # Job 5b – Idempotency check (runs in parallel with integration)
+  # Job 5b – Idempotency check (runs after integration test)
   # ───────────────────────────────────────────────────────────────────────
   idempotency-test:
     name: Idempotency Test
-    needs: [deploy]
+    needs: [integration-test]
     runs-on: ubuntu-latest
     container:
       image: danischm/nac:0.1.6
@@ -321,7 +323,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run idempotency check
         run: |
@@ -344,7 +346,7 @@ jobs:
 
       - name: Upload idempotency artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: idempotency-results
           path: |
@@ -387,7 +389,7 @@ jobs:
       options: --user root
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Send Webex failure notification
         env:

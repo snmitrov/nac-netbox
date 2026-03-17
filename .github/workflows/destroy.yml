@@ -18,6 +18,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # ── Force Node.js 24 for all JavaScript-based actions ─────────────────
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   # ── Organisation / domain ──────────────────────────────────────────────
   domain:          "USA-DEMO"
   org:             "netascode"
@@ -69,7 +71,7 @@ jobs:
           echo "✅ Confirmation accepted. Proceeding with destroy..."
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Terraform init
         run: terraform init -input=false
