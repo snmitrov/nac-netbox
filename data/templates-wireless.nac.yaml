@@ -226,7 +226,7 @@ meraki:
                 enabled: true
                 required: false
               enabled: true             
-              encryption_mode: wpa
+              encryption_mode: wpa-eap
               firewall_l3_firewall_rules:
                 allow_lan_access: true
               ip_assignment_mode: Bridge mode
@@ -236,20 +236,20 @@ meraki:
                 accounting_servers:
                   - host: ${radius_accounting_server1_host}
                     port: 1813
-                    secret: SecretPass123!
+                    secret: !env radius_accounting_server1_secret
                   - host: ${radius_accounting_server2_host}
                     port: 1813
-                    secret: SecretPass123!
+                    secret: !env radius_accounting_server1_secret
                 attribute_for_group_policies: Filter-Id
                 coa: false
                 override: true
                 servers:
                   - host: ${radius_server1_host}
                     port: 1812
-                    secret: SecretPass123!
+                    secret: !env radius_server1_secret
                   - host: ${radius_server2_host}
                     port: 1812
-                    secret: SecretPass123!
+                    secret: !env radius_server1_secret
                 testing: true
               unavailability_schedules:
                 enabled: ${data_ssid_schedules_enabled}
