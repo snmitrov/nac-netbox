@@ -83,6 +83,8 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -132,6 +134,8 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -185,6 +189,8 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -228,6 +234,8 @@ jobs:
       options: --user root
     timeout-minutes: 60
     environment: production       # Use a GitHub Environment with required reviewers for manual approval
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -285,6 +293,8 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -335,6 +345,8 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -404,6 +416,8 @@ jobs:
     container:
       image: danischm/nac:0.1.6
       options: --user root
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
