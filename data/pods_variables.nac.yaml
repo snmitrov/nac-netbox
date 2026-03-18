@@ -1,14 +1,14 @@
 
 meraki:
   domains:
-    - name: USA-DEMO
+    - name: US
       administrator:
         name: admin
       organizations:
         - name: !env org_name
           managed: false
           networks:
-            - name: Unified Branch Network 1
+            - name: Uni-Branch-1
               templates: [nw_setup, nw_management, app_ports, switch, small_branch_inventory, wan_dhcp_dhcp, wireless, app_settings, app_spoke,  app_vlans, app_fw, app_ts,app_content, app_intrusion, app_mal, app_static_routes, group_policies]
               variables:
                 syslog_server: 3.4.5.6
@@ -71,7 +71,7 @@ meraki:
                 wan1_limit_up: 400000
                 wan2_limit_down: 500000
                 wan2_limit_up: 500000
-            - name: Unified Branch Network 2
+            - name: Uni-Branch-2
               templates: [nw_setup, nw_management, app_ports, switch, small_branch_inventory, wan_dhcp_dhcp, wireless, app_settings, app_spoke,  app_vlans, app_fw, app_ts,app_content, app_intrusion, app_mal, app_static_routes, group_policies]
               variables:
                 syslog_server: 3.4.5.6
