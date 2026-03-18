@@ -226,7 +226,7 @@ meraki:
                 enabled: true
                 required: false
               enabled: true             
-              encryption_mode: wpa-eap
+              encryption_mode: wpa
               firewall_l3_firewall_rules:
                 allow_lan_access: true
               ip_assignment_mode: Bridge mode
