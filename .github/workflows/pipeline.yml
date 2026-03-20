@@ -12,8 +12,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # ── Force Node.js 24 for all JavaScript-based actions ─────────────────
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true
   # ── Organisation / domain ──────────────────────────────────────────────
   domain:          "USA-DEMO"
   org:             "netascode"
