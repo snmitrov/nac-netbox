@@ -195,6 +195,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Mark repository as safe for git
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$(pwd)"
+
       - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
@@ -337,6 +342,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Mark repository as safe for git
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$(pwd)"
 
       - name: Download merged configuration
         uses: actions/download-artifact@v5

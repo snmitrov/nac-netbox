@@ -12,61 +12,34 @@ Library    ../myutils.py
 #       but not in the OpenAPI request, hence not in the .nac.yaml schema.
 # Note: organizationId is not checked, as it is only included in the response,
 #       but not in the OpenAPI request, hence not in the .nac.yaml schema.
-Verify {{ organization.name }}/networks/{{ network.name }}//name{% if network.name is defined %}
+{% if network.name is defined %}
+Verify {{ organization.name }}/networks/{{ network.name }}//name
     [Setup]   Get Meraki Data   /networks/{networkId}   ['{{ organization.name }}', '{{ network.name }}']   network
     Should Be Equal As Strings   ${network}[name]   {{ network.name }}
 
-{% else %}
-    Skip    network.name is not defined
 {% endif %}
-Verify {{ organization.name }}/networks/{{ network.name }}//product_types{% if network.product_types is defined %}
+{% if network.product_types is defined %}
+Verify {{ organization.name }}/networks/{{ network.name }}//product_types
     [Setup]   Get Meraki Data   /networks/{networkId}   ['{{ organization.name }}', '{{ network.name }}']   network
     ${evaluated}=    Evaluate    {{ network.product_types }}
     ${validated}=    Validate Subset     ${network}[productTypes]    ${evaluated}
     Should Be True   ${validated}
 
-{% else %}
-    Skip    network.product_types is not defined
 {% endif %}
-Verify {{ organization.name }}/networks/{{ network.name }}//time_zone{% if network.time_zone is defined %}
+{% if network.time_zone is defined %}
+Verify {{ organization.name }}/networks/{{ network.name }}//time_zone
     [Setup]   Get Meraki Data   /networks/{networkId}   ['{{ organization.name }}', '{{ network.name }}']   network
     Should Be Equal As Strings   ${network}[timeZone]   {{ network.time_zone }}
 
-{% else %}
-    Skip    network.time_zone is not defined
 {% endif %}
-Verify {{ organization.name }}/networks/{{ network.name }}//tags{% if network.tags is defined %}
+{% if network.tags is defined %}
+Verify {{ organization.name }}/networks/{{ network.name }}//tags
     [Setup]   Get Meraki Data   /networks/{networkId}   ['{{ organization.name }}', '{{ network.name }}']   network
     ${evaluated}=    Evaluate    {{ network.tags }}
     ${validated}=    Validate Subset     ${network}[tags]    ${evaluated}
     Should Be True   ${validated}
-
-{% else %}
-    Skip    network.tags is not defined
 {% endif %}
-Verify {{ organization.name }}/networks/{{ network.name }}//enrollment_string{% if network.enrollment_string is defined %}
-    [Setup]   Get Meraki Data   /networks/{networkId}   ['{{ organization.name }}', '{{ network.name }}']   network
-    Should Be Equal As Strings   ${network}[enrollmentString]   {{ network.enrollment_string }}
 
-{% else %}
-    Skip    network.enrollment_string is not defined
-{% endif %}
-# Note: url is not checked, as it is only included in the response,
-#       but not in the OpenAPI request, hence not in the .nac.yaml schema.
-Verify {{ organization.name }}/networks/{{ network.name }}//notes{% if network.notes is defined %}
-    [Setup]   Get Meraki Data   /networks/{networkId}   ['{{ organization.name }}', '{{ network.name }}']   network
-    Should Be Equal As Strings   ${network}[notes]   {{ network.notes }}
-
-{% else %}
-    Skip    network.notes is not defined
-{% endif %}
-Verify {{ organization.name }}/networks/{{ network.name }}//is_bound_to_config_template{% if network.is_bound_to_config_template is defined %}
-    [Setup]   Get Meraki Data   /networks/{networkId}   ['{{ organization.name }}', '{{ network.name }}']   network
-    Should Be Equal As Strings   ${network}[isBoundToConfigTemplate]   {{ network.is_bound_to_config_template }}
-
-{% else %}
-    Skip    network.is_bound_to_config_template is not defined
-{% endif %}
 
 {% endfor %}
 
