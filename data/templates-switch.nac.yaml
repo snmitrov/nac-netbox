@@ -71,7 +71,7 @@ meraki:
               voice_vlan_clients: true
               access_policy_type: Hybrid authentication
               radius:
-                re_authentication_interval: 700
+                re_authentication_interval: 0
               dot1x_control_direction: both
               url_redirect_walled_garden: false
           settings:
