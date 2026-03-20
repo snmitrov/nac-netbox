@@ -12,12 +12,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # ── Organisation / domain ──────────────────────────────────────────────
-  domain:          "USA-DEMO"
-  org:             "netascode"
   org_admin:       "admin"
   org_admin_email: "admin-branch@netascode.cisco.com"
-  # ── SNMP / local-page / RADIUS credentials ────────────────────────────
   v3_auth_pass:                       "REDACTED_PASSWORD"
   v3_priv_pass:                       "REDACTED_PASSWORD"
   local_status_page_username:         "admin"
@@ -123,7 +119,7 @@ jobs:
   # Job 2 – Validate: terraform fmt + nac-validate
   # ───────────────────────────────────────────────────────────────────────
   validate:
-    name: Validate
+    name: Syntax and Semantics Validation
     needs: [prepare]
     runs-on: ubuntu-latest
     container:
@@ -368,6 +364,7 @@ jobs:
           name: integration-test-results
           path: |
             tests/results/*.html
+            tests/results/xunit.xml
             test_output.txt
             resolved.yaml
           retention-days: 7
@@ -378,7 +375,7 @@ jobs:
         with:
           name: Integration Test Results
           path: tests/results/xunit.xml
-          reporter: java-junit
+          reporter: python-xunit
 
   # ───────────────────────────────────────────────────────────────────────
   # Post-pipeline: failure handling
