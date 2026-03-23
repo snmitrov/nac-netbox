@@ -62,6 +62,7 @@ env:
   branch2_cw_serial:     XXXX-XXXX-XXXX
   MERAKI_API_KEY:                    ${{ secrets.MERAKI_API_KEY }}
   TF_TOKEN_app_terraform_io:         ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
+  TF_CLOUD_TOKEN:                    ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
 
 
 jobs:
@@ -196,6 +197,19 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global --add safe.directory "$(pwd)"
 
+      - name: Configure Terraform Cloud credentials
+        run: |
+          mkdir -p ~/.terraform.d
+          cat > ~/.terraform.d/credentials.tfrc.json <<EOF
+          {
+            "credentials": {
+              "app.terraform.io": {
+                "token": "$TF_CLOUD_TOKEN"
+              }
+            }
+          }
+          EOF
+
       - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
@@ -237,6 +251,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Configure Terraform Cloud credentials
+        run: |
+          mkdir -p ~/.terraform.d
+          cat > ~/.terraform.d/credentials.tfrc.json <<EOF
+          {
+            "credentials": {
+              "app.terraform.io": {
+                "token": "$TF_CLOUD_TOKEN"
+              }
+            }
+          }
+          EOF
+
       - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
@@ -271,6 +298,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Configure Terraform Cloud credentials
+        run: |
+          mkdir -p ~/.terraform.d
+          cat > ~/.terraform.d/credentials.tfrc.json <<EOF
+          {
+            "credentials": {
+              "app.terraform.io": {
+                "token": "$TF_CLOUD_TOKEN"
+              }
+            }
+          }
+          EOF
 
       - name: Download merged configuration
         uses: actions/download-artifact@v5
@@ -377,6 +417,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Configure Terraform Cloud credentials
+        if: needs.deploy.result == 'failure'
+        run: |
+          mkdir -p ~/.terraform.d
+          cat > ~/.terraform.d/credentials.tfrc.json <<EOF
+          {
+            "credentials": {
+              "app.terraform.io": {
+                "token": "$TF_CLOUD_TOKEN"
+              }
+            }
+          }
+          EOF
 
       - name: Terraform destroy on deploy failure
         if: needs.deploy.result == 'failure'
