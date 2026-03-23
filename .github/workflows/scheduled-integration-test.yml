@@ -1,0 +1,109 @@
+###############################################################################
+# GitHub Actions Workflow – Scheduled Integration Tests
+# Runs every hour to verify the deployed configuration matches expectations.
+###############################################################################
+
+name: Scheduled Integration Test
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # every 6 hours
+  workflow_dispatch:       # allow manual trigger too
+
+concurrency:
+  group: scheduled-integration-test
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    container:
+      image: danischm/nac:0.1.6
+      options: --user root
+    timeout-minutes: 30
+    environment: unified-branch-terraform-jumpstart
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: grep -v '^\s*#' .env | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - name: Mark repository as safe for git
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$(pwd)"
+
+      - name: Merge YAML data model
+        working-directory: workspaces
+        run: |
+          terraform init
+          terraform apply -auto-approve
+          if [ ! -f merged_configuration.nac.yaml ]; then
+            echo "❌ merged_configuration.nac.yaml not found!"
+            exit 1
+          fi
+          chmod 644 merged_configuration.nac.yaml
+
+      - name: Run integration tests
+        id: nac-test
+        run: |
+          set -o pipefail
+          nac-test -d workspaces/merged_configuration.nac.yaml -t ./tests/templates -o ./tests/results 2>&1 | tee test_output.txt
+
+      - name: Write Job Summary
+        if: always()
+        run: |
+          echo "## 🧪 Scheduled Integration Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -f tests/results/xunit.xml ]; then
+            tests=$(grep -oP 'tests="\K[0-9]+' tests/results/xunit.xml 2>/dev/null | head -1 || echo "0")
+            failures=$(grep -oP 'failures="\K[0-9]+' tests/results/xunit.xml 2>/dev/null | head -1 || echo "0")
+            errors=$(grep -oP 'errors="\K[0-9]+' tests/results/xunit.xml 2>/dev/null | head -1 || echo "0")
+            skipped=$(grep -oP 'skipped="\K[0-9]+' tests/results/xunit.xml 2>/dev/null | head -1 || echo "0")
+            passed=$((tests - failures - errors - skipped))
+
+            if [ "$failures" -eq 0 ] && [ "$errors" -eq 0 ]; then
+              echo "✅ **All tests passed**" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "❌ **Some tests failed**" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Metric | Count |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|--------|------:|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Total  | $tests |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ✅ Passed | $passed |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ❌ Failed | $failures |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ⚠️ Errors | $errors |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ⏭️ Skipped | $skipped |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⚠️ No xunit.xml found at \`tests/results/xunit.xml\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "<details><summary>📋 Full Test Log</summary>" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f test_output.txt ]; then
+            cat test_output.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No test output captured." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: scheduled-integration-test-${{ github.run_number }}
+          path: |
+            tests/results/*.html
+            tests/results/xunit.xml
+            test_output.txt
+          retention-days: 7
