@@ -60,7 +60,7 @@ env:
   branch2_ms_serial:     XXXX-XXXX-XXXX
   branch2_cw_serial:     XXXX-XXXX-XXXX
   MERAKI_API_KEY:                    ${{ secrets.MERAKI_API_KEY }}
-
+  MERAKI_DASHBOARD_API_KEY:          ${{ secrets.MERAKI_API_KEY }}
 
 jobs:
   # ───────────────────────────────────────────────────────────────────────
