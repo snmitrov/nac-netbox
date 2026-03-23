@@ -27,7 +27,6 @@ env:
   # ── Terraform ──────────────────────────────────────────────────────────
   TF_VAR_meraki_api_key: ${{ secrets.MERAKI_API_KEY }}
   TF_IN_AUTOMATION: "true"
-  TF_TOKEN_app_terraform_io: REDACTED_TF_CLOUD_TOKEN
   # ── Secrets referenced by !env tags in data/pods_variables.nac.yaml ───
   # Configure these in GitHub → Settings → Secrets and variables → Actions:
   #
