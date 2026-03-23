@@ -81,7 +81,8 @@ meraki:
           - name: ${appliance_01_name}
             serial: ${appliance_01_serial}
             tags:
-              - test
+              - small_branch_appliance
+              - ubac
             lat: ${lat}
             lng: ${lng}
             address: ${address}
@@ -113,7 +114,8 @@ meraki:
           - name: ${access_switch_01_name}
             serial: ${access_switch_01_serial}
             tags:
-              - test
+              - small_branch_switch
+              - ubac
             lat: ${lat}
             lng: ${lng}
             address: ${address}
@@ -162,7 +164,8 @@ meraki:
           - name: ${ap_01_name}
             serial: ${ap_01_serial}
             tags:
-              - test
+              - small_branch_ap
+              - ubac
             lat: ${lat}
             lng: ${lng}
             address: ${address}
