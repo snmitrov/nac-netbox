@@ -1,6 +1,6 @@
 
 ###############################################################################
-# GitHub Actions Workflow – IAC Validate
+# GitHub Actions Workflow – Semantics Validate
 ###############################################################################
 
 name: Run Semantic Business Rules
@@ -9,8 +9,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  iac-validate:
-    name: IAC Validate
+  semantics-validate:
+    name: Semantics Validate
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Load shared env vars
-        run: cat .env >> "$GITHUB_ENV"
+        run: grep -v '^\s*#' .env | grep -v '^\s*$' >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -52,6 +52,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: iac-validate-output
+          name: semantics-validate-output
           path: iac_validate_output.txt
           retention-days: 7
