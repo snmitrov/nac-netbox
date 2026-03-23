@@ -31,7 +31,6 @@ env:
   # Configure these in GitHub → Settings → Secrets and variables → Actions:
   #
   # MERAKI_API_KEY            – Meraki Dashboard API key
-  # TF_TOKEN_APP_TERRAFORM_IO – Terraform Cloud token
   # ORG_NAME                  – Organization name (e.g. "CX Meraki Lab")
   # VPN_HUB_NETWORK_NAME      – VPN hub network name (e.g. "Datacenter")
   #
@@ -61,8 +60,6 @@ env:
   branch2_ms_serial:     XXXX-XXXX-XXXX
   branch2_cw_serial:     XXXX-XXXX-XXXX
   MERAKI_API_KEY:                    ${{ secrets.MERAKI_API_KEY }}
-  TF_TOKEN_app_terraform_io:         ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
-  TF_CLOUD_TOKEN:                    ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
 
 
 jobs:
@@ -82,16 +79,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Configure Terraform Cloud credentials
-        run: |
-          echo 'credentials "app.terraform.io" {' > /tmp/.terraformrc
-          echo "  token = \"$TF_CLOUD_TOKEN\"" >> /tmp/.terraformrc
-          echo '}' >> /tmp/.terraformrc
-          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
-          echo "--- Verifying credentials file ---"
-          cat /tmp/.terraformrc
-          if [ -z "$TF_CLOUD_TOKEN" ]; then echo "ERROR: TF_CLOUD_TOKEN is empty! Check secret TF_TOKEN_APP_TERRAFORM_IO."; exit 1; fi
-
       - name: Merge YAML data model
         working-directory: workspaces
         run: |
@@ -100,9 +87,6 @@ jobs:
 
           echo "🚀 Running terraform init..."
           terraform init
-
-          echo "🔍 Checking Terraform Cloud connectivity..."
-          curl -v https://app.terraform.io/.well-known/terraform.json || echo '⚠️ Terraform Cloud connectivity check failed – continuing.'
 
           echo "⚙️ Running terraform apply..."
           terraform apply -auto-approve
@@ -207,27 +191,30 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global --add safe.directory "$(pwd)"
 
-      - name: Configure Terraform Cloud credentials
-        run: |
-          echo 'credentials "app.terraform.io" {' > /tmp/.terraformrc
-          echo "  token = \"$TF_CLOUD_TOKEN\"" >> /tmp/.terraformrc
-          echo '}' >> /tmp/.terraformrc
-          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
-          if [ -z "$TF_CLOUD_TOKEN" ]; then echo "ERROR: TF_CLOUD_TOKEN is empty!"; exit 1; fi
-
       - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
           name: merged-config
           path: workspaces
 
+      - name: Restore Terraform state cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            terraform.tfstate
+            terraform.tfstate.backup
+          key: terraform-state-${{ github.ref_name }}
+          restore-keys: |
+            terraform-state-
+
       - name: Terraform plan
         run: |
-          rm -rf .terraform/modules
-          terraform get -update
+          ls -la terraform.tfstate 2>/dev/null && echo "✅ Existing state found" || echo "⚠️ No existing state – fresh deployment"
           terraform init -input=false
-          terraform plan -input=false -no-color | tee plan.txt
-          echo "✅ Plan completed."
+          terraform plan -out=plan.tfplan -input=false
+          terraform show -no-color plan.tfplan > plan.txt
+          terraform show -json plan.tfplan | jq > plan.json
+          echo "✅ Plan completed and stored."
 
       - name: Upload plan artifacts
         if: always()
@@ -235,8 +222,20 @@ jobs:
         with:
           name: plan-outputs
           path: |
+            plan.tfplan
             plan.txt
+            plan.json
           retention-days: 7
+
+      - name: Upload state for next jobs
+        uses: actions/upload-artifact@v5
+        with:
+          name: terraform-state-pre-deploy
+          path: |
+            terraform.tfstate
+            terraform.tfstate.backup
+          retention-days: 7
+          if-no-files-found: ignore
 
   # ───────────────────────────────────────────────────────────────────────
   # Job 4 – Deploy: apply the saved plan (requires manual approval)
@@ -249,19 +248,12 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
-    environment: production       # Use a GitHub Environment with required reviewers for manual approval
+    environment: production
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      - name: Configure Terraform Cloud credentials
-        run: |
-          echo 'credentials "app.terraform.io" {' > /tmp/.terraformrc
-          echo "  token = \"$TF_CLOUD_TOKEN\"" >> /tmp/.terraformrc
-          echo '}' >> /tmp/.terraformrc
-          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
 
       - name: Download merged configuration
         uses: actions/download-artifact@v5
@@ -269,11 +261,44 @@ jobs:
           name: merged-config
           path: workspaces
 
+      - name: Download plan
+        uses: actions/download-artifact@v5
+        with:
+          name: plan-outputs
+          path: .
+
+      - name: Restore Terraform state
+        uses: actions/download-artifact@v5
+        continue-on-error: true
+        with:
+          name: terraform-state-pre-deploy
+          path: .
+
       - name: Terraform apply
         id: apply
         run: |
           terraform init -input=false
-          terraform apply -input=false -auto-approve
+          terraform apply -input=false -auto-approve plan.tfplan
+
+      - name: Save Terraform state to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            terraform.tfstate
+            terraform.tfstate.backup
+          key: terraform-state-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload Terraform state artifact
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: terraform-state
+          path: |
+            terraform.tfstate
+            terraform.tfstate.backup
+          retention-days: 90
+          overwrite: true
 
       - name: Terraform destroy (rollback on failure)
         if: failure() && steps.apply.outcome == 'failure'
@@ -298,24 +323,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Configure Terraform Cloud credentials
-        run: |
-          echo 'credentials "app.terraform.io" {' > /tmp/.terraformrc
-          echo "  token = \"$TF_CLOUD_TOKEN\"" >> /tmp/.terraformrc
-          echo '}' >> /tmp/.terraformrc
-          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
-
       - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
           name: merged-config
           path: workspaces
 
+      - name: Download Terraform state
+        uses: actions/download-artifact@v5
+        with:
+          name: terraform-state
+          path: .
+
       - name: Run idempotency check
         run: |
           terraform init -input=false
           exit_code=0
-          terraform plan -input=false -detailed-exitcode -no-color 2>&1 | tee idempotency_plan.txt || exit_code=$?
+          terraform plan -input=false -out=idempotency.tfplan -detailed-exitcode || exit_code=$?
+          terraform show -no-color idempotency.tfplan > idempotency_plan.txt
 
           if [ "$exit_code" -eq 2 ]; then
             echo "❌ Terraform plan detected changes! Idempotency test failed."
@@ -336,6 +361,7 @@ jobs:
           name: idempotency-results
           path: |
             idempotency_plan.txt
+            idempotency.tfplan
           retention-days: 7
 
   # ───────────────────────────────────────────────────────────────────────
@@ -411,13 +437,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Configure Terraform Cloud credentials
+      - name: Download Terraform state
         if: needs.deploy.result == 'failure'
-        run: |
-          echo 'credentials "app.terraform.io" {' > /tmp/.terraformrc
-          echo "  token = \"$TF_CLOUD_TOKEN\"" >> /tmp/.terraformrc
-          echo '}' >> /tmp/.terraformrc
-          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
+        continue-on-error: true
+        uses: actions/download-artifact@v5
+        with:
+          name: terraform-state
+          path: .
 
       - name: Terraform destroy on deploy failure
         if: needs.deploy.result == 'failure'
