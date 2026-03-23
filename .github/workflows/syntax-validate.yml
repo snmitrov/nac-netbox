@@ -16,6 +16,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -32,15 +35,13 @@ jobs:
           iac-validate -r rules data/org_global.nac.yaml -s schema.yaml --verbosity DEBUG 2>&1 | tee syntax_validate_output.txt
           exit_code=${PIPESTATUS[0]}
 
-          echo ""
-          echo "═══════════════════════════════════════════════════"
           if [ "$exit_code" -eq 0 ]; then
             echo "✅ Syntax validation passed – no errors found."
           else
-            echo "❌ Syntax validation failed (exit code: $exit_code)"
-            echo "═══════════════════════════════════════════════════"
-            echo ""
-            echo "::error::Syntax validation found errors. See output above for details."
+            # Extract ERROR lines and surface each as a GitHub annotation
+            grep '^ERROR' syntax_validate_output.txt | while IFS= read -r line; do
+              echo "::error::${line}"
+            done
           fi
           exit $exit_code
 

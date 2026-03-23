@@ -3,7 +3,7 @@
 # GitHub Actions Workflow – IAC Validate
 ###############################################################################
 
-name: Run Semantic Validation - Business Logic 
+name: Run Semantic Business Rules
 
 on:
   workflow_dispatch:
@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v5

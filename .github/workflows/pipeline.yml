@@ -16,47 +16,15 @@ env:
 # In the production environment, please make sure to use strong, unique credentials 
 # and store them securely (e.g. GitHub Secrets, HashiCorp Vault, etc.). 
 # Avoid hardcoding sensitive information directly in the workflow file.
-  org_admin:       "admin"
-  org_admin_email: "admin-branch@netascode.cisco.com"
-  v3_auth_pass:                       "REDACTED_PASSWORD"
-  v3_priv_pass:                       "REDACTED_PASSWORD"
-  local_status_page_username:         "admin"
-  local_page_username:                "admin"
-  local_status_page_password:         "Cisco!12345C60972A"
-  local_page_password:                "Cisco!12345C60972A"
-  radius_accounting_server1_secret:   "REDACTED_PASSWORD!"
-  radius_server1_secret:              "REDACTED_PASSWORD!"
-  snmp_username:                      "admin"
-  snmp_passphrase:                    "REDACTED_PASSWORD"
+#
+# Shared non-secret variables are defined in .env at the repo root.
+# Each job loads them via: cat .env >> "$GITHUB_ENV"
+#
   # ── Terraform ──────────────────────────────────────────────────────────
   TF_VAR_meraki_api_key: ${{ secrets.MERAKI_API_KEY }}
   TF_IN_AUTOMATION: "true"
-  # ── Secrets referenced by !env tags in data/pods_variables.nac.yaml ───
-  # Configure these in GitHub → Settings → Secrets and variables → Actions:
-  #
-  # MERAKI_API_KEY            – Meraki Dashboard API key
-  # ORG_NAME                  – Organization name (e.g. "CX Meraki Lab")
-  # VPN_HUB_NETWORK_NAME      – VPN hub network name (e.g. "Datacenter")
-  #
-  # ── Device serials (per-branch) ───────────────────────────────────────
-  # BRANCH1_MX_SERIAL         – Branch 1 MX appliance serial
-  # BRANCH1_MS_SERIAL         – Branch 1 MS switch serial
-  # BRANCH1_CW_SERIAL         – Branch 1 CW access point serial
-  # BRANCH2_MX_SERIAL         – Branch 2 MX appliance serial
-  # BRANCH2_MS_SERIAL         – Branch 2 MS switch serial
-  # BRANCH2_CW_SERIAL         – Branch 2 CW access point serial
 
-  org_name:              Org-3665367146726165084
-  vpn_hub_network_name:  Datacenter
-  branch1_mx_serial:     XXXX-XXXX-XXXX
-  branch1_ms_serial:     XXXX-XXXX-XXXX
-  branch1_cw_serial:     XXXX-XXXX-XXXX
-  branch2_mx_serial:     XXXX-XXXX-XXXX
-  branch2_ms_serial:     XXXX-XXXX-XXXX
-  branch2_cw_serial:     XXXX-XXXX-XXXX
-
-  # API Key is stored in GitHub Secrets for security. 
-  # Reference it here to make it available as an environment variable for Terraform and NAC.
+  # API Key is stored in GitHub Secrets for security.
   MERAKI_API_KEY:                    ${{ secrets.MERAKI_API_KEY }}
   MERAKI_DASHBOARD_API_KEY:          ${{ secrets.MERAKI_API_KEY }}
 
@@ -76,6 +44,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
 
       - name: Merge YAML data model
         working-directory: workspaces
@@ -124,6 +95,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
 
       - name: Mark workspace as safe for git
         run: |
@@ -184,6 +158,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
 
       - name: Mark repository as safe for git
         run: |
@@ -336,6 +313,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
+
       - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
@@ -405,6 +385,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
+
       - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
@@ -464,6 +447,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
+
       - name: Mark repository as safe for git
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -519,6 +505,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: cat .env >> "$GITHUB_ENV"
 
       - name: Download Terraform state
         if: needs.deploy.result == 'failure'
