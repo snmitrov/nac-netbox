@@ -455,11 +455,56 @@ jobs:
           path: workspaces
 
       - name: Run integration tests
+        id: nac-test
         run: |
           echo "Delaying integration tests for 60 seconds..."
           sleep 60
           set -o pipefail
           nac-test -d workspaces/merged_configuration.nac.yaml -t ./tests/templates -o ./tests/results 2>&1 | tee test_output.txt
+
+      - name: Write Job Summary
+        if: always()
+        run: |
+          echo "## 🧪 Integration Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Parse xunit.xml if available
+          if [ -f tests/results/xunit.xml ]; then
+            tests=$(grep -oP 'tests="\K[0-9]+' tests/results/xunit.xml 2>/dev/null | head -1 || echo "0")
+            failures=$(grep -oP 'failures="\K[0-9]+' tests/results/xunit.xml 2>/dev/null | head -1 || echo "0")
+            errors=$(grep -oP 'errors="\K[0-9]+' tests/results/xunit.xml 2>/dev/null | head -1 || echo "0")
+            skipped=$(grep -oP 'skipped="\K[0-9]+' tests/results/xunit.xml 2>/dev/null | head -1 || echo "0")
+            passed=$((tests - failures - errors - skipped))
+
+            if [ "$failures" -eq 0 ] && [ "$errors" -eq 0 ]; then
+              echo "✅ **All tests passed**" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "❌ **Some tests failed**" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Metric | Count |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|--------|------:|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Total  | $tests |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ✅ Passed | $passed |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ❌ Failed | $failures |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ⚠️ Errors | $errors |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| ⏭️ Skipped | $skipped |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⚠️ No xunit.xml found at \`tests/results/xunit.xml\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Append full test log
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "<details><summary>📋 Full Test Log</summary>" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f test_output.txt ]; then
+            cat test_output.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No test output captured." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "</details>" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test artifacts
         if: always()
@@ -476,10 +521,11 @@ jobs:
       - name: Publish test report
         if: always()
         uses: dorny/test-reporter@v2
+        continue-on-error: true
         with:
           name: Integration Test Results
           path: tests/results/xunit.xml
-          reporter: python-xunit
+          reporter: java-junit
 
   # ───────────────────────────────────────────────────────────────────────
   # Post-pipeline: failure handling
