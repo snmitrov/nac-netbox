@@ -181,6 +181,7 @@ meraki:
                 # stacks:
                 #   - ${access_stack_01_name}
             rstp: true
+            stp_guard: bpdu guard
         # switch_stacks:
         #   - name: ${access_stack_01_name}
         #     devices:

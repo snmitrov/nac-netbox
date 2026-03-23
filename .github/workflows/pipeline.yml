@@ -64,6 +64,7 @@ env:
   MERAKI_API_KEY:        REDACTED_MERAKI_API_KEY
 
 
+
 jobs:
   # ───────────────────────────────────────────────────────────────────────
   # Job 1 – Prepare: merge data YAML files via the workspaces/ sub-project
@@ -207,10 +208,8 @@ jobs:
           rm -rf .terraform/modules
           terraform get -update
           terraform init -input=false
-          terraform plan -out=plan.tfplan -input=false
-          terraform show -no-color plan.tfplan > plan.txt
-          terraform show -json plan.tfplan | jq > plan.json
-          echo "✅ Plan completed and stored."
+          terraform plan -input=false -no-color | tee plan.txt
+          echo "✅ Plan completed."
 
       - name: Upload plan artifacts
         if: always()
@@ -218,9 +217,7 @@ jobs:
         with:
           name: plan-outputs
           path: |
-            plan.tfplan
             plan.txt
-            plan.json
           retention-days: 7
 
   # ───────────────────────────────────────────────────────────────────────
@@ -241,28 +238,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Download plan
+      - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
-          name: plan-outputs
-          path: .
+          name: merged-config
+          path: workspaces
 
       - name: Terraform apply
         id: apply
         run: |
           terraform init -input=false
-          terraform apply -input=false -auto-approve plan.tfplan
-
-      - name: Upload Terraform state
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: terraform-state
-          path: |
-            terraform.tfstate
-            .terraform.lock.hcl
-          retention-days: 90
-          overwrite: true
+          terraform apply -input=false -auto-approve
 
       - name: Terraform destroy (rollback on failure)
         if: failure() && steps.apply.outcome == 'failure'
@@ -287,11 +273,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Download Terraform state
+      - name: Download merged configuration
         uses: actions/download-artifact@v5
         with:
-          name: terraform-state
-          path: .
+          name: merged-config
+          path: workspaces
 
       - name: Run idempotency check
         run: |
@@ -394,14 +380,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      - name: Download Terraform state
-        if: needs.deploy.result == 'failure'
-        continue-on-error: true
-        uses: actions/download-artifact@v5
-        with:
-          name: terraform-state
-          path: .
 
       - name: Terraform destroy on deploy failure
         if: needs.deploy.result == 'failure'
