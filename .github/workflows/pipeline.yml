@@ -518,15 +518,6 @@ jobs:
             resolved.yaml
           retention-days: 7
 
-      - name: Publish test report
-        if: always()
-        uses: dorny/test-reporter@v2
-        continue-on-error: true
-        with:
-          name: Integration Test Results
-          path: tests/results/xunit.xml
-          reporter: java-junit
-
   # ───────────────────────────────────────────────────────────────────────
   # Post-pipeline: failure handling
   # Destroy only when the deploy job itself failed.
