@@ -63,6 +63,7 @@ env:
   MERAKI_API_KEY:                    ${{ secrets.MERAKI_API_KEY }}
   TF_TOKEN_app_terraform_io:         ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
   TF_CLOUD_TOKEN:                    ${{ secrets.TF_TOKEN_APP_TERRAFORM_IO }}
+  TF_CLI_CONFIG_FILE:                /tmp/.terraformrc
 
 
 jobs:
@@ -81,6 +82,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Configure Terraform Cloud credentials
+        run: |
+          cat > /tmp/.terraformrc <<EOF
+          credentials "app.terraform.io" {
+            token = "$TF_CLOUD_TOKEN"
+          }
+          EOF
+          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
 
       - name: Merge YAML data model
         working-directory: workspaces
@@ -199,16 +209,12 @@ jobs:
 
       - name: Configure Terraform Cloud credentials
         run: |
-          mkdir -p ~/.terraform.d
-          cat > ~/.terraform.d/credentials.tfrc.json <<EOF
-          {
-            "credentials": {
-              "app.terraform.io": {
-                "token": "$TF_CLOUD_TOKEN"
-              }
-            }
+          cat > /tmp/.terraformrc <<EOF
+          credentials "app.terraform.io" {
+            token = "$TF_CLOUD_TOKEN"
           }
           EOF
+          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
 
       - name: Download merged configuration
         uses: actions/download-artifact@v5
@@ -253,16 +259,12 @@ jobs:
 
       - name: Configure Terraform Cloud credentials
         run: |
-          mkdir -p ~/.terraform.d
-          cat > ~/.terraform.d/credentials.tfrc.json <<EOF
-          {
-            "credentials": {
-              "app.terraform.io": {
-                "token": "$TF_CLOUD_TOKEN"
-              }
-            }
+          cat > /tmp/.terraformrc <<EOF
+          credentials "app.terraform.io" {
+            token = "$TF_CLOUD_TOKEN"
           }
           EOF
+          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
 
       - name: Download merged configuration
         uses: actions/download-artifact@v5
@@ -301,16 +303,12 @@ jobs:
 
       - name: Configure Terraform Cloud credentials
         run: |
-          mkdir -p ~/.terraform.d
-          cat > ~/.terraform.d/credentials.tfrc.json <<EOF
-          {
-            "credentials": {
-              "app.terraform.io": {
-                "token": "$TF_CLOUD_TOKEN"
-              }
-            }
+          cat > /tmp/.terraformrc <<EOF
+          credentials "app.terraform.io" {
+            token = "$TF_CLOUD_TOKEN"
           }
           EOF
+          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
 
       - name: Download merged configuration
         uses: actions/download-artifact@v5
@@ -421,16 +419,12 @@ jobs:
       - name: Configure Terraform Cloud credentials
         if: needs.deploy.result == 'failure'
         run: |
-          mkdir -p ~/.terraform.d
-          cat > ~/.terraform.d/credentials.tfrc.json <<EOF
-          {
-            "credentials": {
-              "app.terraform.io": {
-                "token": "$TF_CLOUD_TOKEN"
-              }
-            }
+          cat > /tmp/.terraformrc <<EOF
+          credentials "app.terraform.io" {
+            token = "$TF_CLOUD_TOKEN"
           }
           EOF
+          echo "TF_CLI_CONFIG_FILE=/tmp/.terraformrc" >> $GITHUB_ENV
 
       - name: Terraform destroy on deploy failure
         if: needs.deploy.result == 'failure'
