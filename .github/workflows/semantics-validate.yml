@@ -3,7 +3,7 @@
 # GitHub Actions Workflow – Semantics Validate
 ###############################################################################
 
-name: Run Semantic Business Rules
+name: Run Semantic / Business Rule
 
 on:
   workflow_dispatch:

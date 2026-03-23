@@ -28,6 +28,11 @@ env:
   MERAKI_API_KEY:                    ${{ secrets.MERAKI_API_KEY }}
   MERAKI_DASHBOARD_API_KEY:          ${{ secrets.MERAKI_API_KEY }}
 
+  # ── Runner ─────────────────────────────────────────────────────────────
+  # Force Node24 for JavaScript-based actions inside container jobs.
+  # See: https://github.blog/changelog/2025-01-17-github-actions-node-24-support
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   # ───────────────────────────────────────────────────────────────────────
   # Job 1 – Prepare: merge data YAML files via the workspaces/ sub-project
@@ -39,8 +44,6 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -90,8 +93,6 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -153,14 +154,12 @@ jobs:
       options: --user root
     timeout-minutes: 60
     environment: unified-branch-terraform-jumpstart
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
       - name: Load shared env vars
-        run: cat .env >> "$GITHUB_ENV"
+        run: grep -v '^\s*#' .env | grep -v '^\s*$' >> "$GITHUB_ENV"
 
       - name: Mark repository as safe for git
         run: |
@@ -307,8 +306,6 @@ jobs:
       options: --user root
     timeout-minutes: 60
     environment: unified-branch-terraform-jumpstart
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -379,8 +376,6 @@ jobs:
       options: --user root
     timeout-minutes: 60
     environment: unified-branch-terraform-jumpstart
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -441,14 +436,12 @@ jobs:
       options: --user root
     timeout-minutes: 60
     environment: unified-branch-terraform-jumpstart
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
       - name: Load shared env vars
-        run: cat .env >> "$GITHUB_ENV"
+        run: grep -v '^\s*#' .env | grep -v '^\s*$' >> "$GITHUB_ENV"
 
       - name: Mark repository as safe for git
         run: |
@@ -500,8 +493,6 @@ jobs:
     container:
       image: danischm/nac:0.1.6
       options: --user root
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
