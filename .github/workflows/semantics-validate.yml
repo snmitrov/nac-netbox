@@ -44,7 +44,10 @@ jobs:
             echo "❌ iac-validate failed (exit code: $exit_code)"
             echo "═══════════════════════════════════════════════════"
             echo ""
-            echo "::error::iac-validate found violations. See output above for details."
+            # Surface each ERROR line as a GitHub annotation
+            grep '^ERROR' iac_validate_output.txt | while IFS= read -r line; do
+              echo "::error::${line}"
+            done
           fi
           exit $exit_code
 
