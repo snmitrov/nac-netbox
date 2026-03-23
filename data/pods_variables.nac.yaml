@@ -6,7 +6,6 @@ meraki:
         name: admin
       organizations:
         - name: !env org_name
-          managed: false
           networks:
             - name: Uni-Branch-1
               managed: false
@@ -73,7 +72,6 @@ meraki:
                 wan2_limit_down: 500000
                 wan2_limit_up: 500000
             - name: Uni-Branch-2
-              managed: 
               templates: [nw_setup, nw_management, app_ports, switch, small_branch_inventory, wan_dhcp_dhcp, wireless, app_settings, app_spoke,  app_vlans, app_fw, app_ts,app_content, app_intrusion, app_mal, app_static_routes, group_policies]
               variables:
                 syslog_server: 3.4.5.6
