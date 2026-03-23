@@ -76,11 +76,11 @@ meraki:
               - URLs
               - Wireless Event log
               - Appliance Event log
-        # netflow:
-        #   collector_ip: ${netflow_server}
-        #   collector_port: ${netflow_port}
-        #   reporting: true
-        #   eta:  false   
+        netflow:
+          collector_ip: ${netflow_server}
+          collector_port: ${netflow_port}
+          reporting: true
+          eta:  false   
       # 
       # The below code does the following:
       #

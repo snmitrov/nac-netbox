@@ -75,8 +75,8 @@ meraki:
               variables:
                 syslog_server: 3.4.5.6
                 syslog_port: 514
-                # netflow_server: 4.5.6.7
-                # netflow_port: 2055
+                netflow_server: 4.5.6.7
+                netflow_port: 2055
                 appliance_01_name: Unified Branch Network 2 Appliance
                 access_switch_01_name: Unified Branch Network 2 Switch
                 ap_01_name: Unified Branch Network 2 Access Point
