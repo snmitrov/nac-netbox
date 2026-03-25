@@ -191,14 +191,14 @@ meraki:
               subnet: ${vlan50_subnet}
               appliance_ip: ${vlan50_appliance_ip}
               dns_nameservers: opendns
-              # dhcp_handling: "Run a DHCP server"
+              dhcp_handling: "Run a DHCP server"
               # dhcp_lease_time: "1 day"
               # dhcp_boot_options: false
-              mandatory_dhcp: false
-              dhcp_handling: "Relay DHCP to another server"
-              dhcp_relay_server_ips:
-                - ${corp_dhcp_server1}
-                - ${corp_dhcp_server2}
+              # mandatory_dhcp: false
+              # dhcp_handling: "Relay DHCP to another server"
+              # dhcp_relay_server_ips:
+              #   - ${corp_dhcp_server1}
+              #   - ${corp_dhcp_server2}
             - vlan_id: 999
               name: "Infra"
               subnet: ${vlan999_subnet}
