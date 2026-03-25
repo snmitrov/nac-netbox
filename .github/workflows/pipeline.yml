@@ -44,6 +44,7 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
+    environment: unified-branch-network-as-code
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -93,6 +94,7 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 60
+    environment: unified-branch-network-as-code
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -530,6 +532,7 @@ jobs:
     container:
       image: danischm/nac:0.1.6
       options: --user root
+    environment: unified-branch-network-as-code
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

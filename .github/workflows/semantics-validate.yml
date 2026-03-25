@@ -13,6 +13,7 @@ jobs:
     name: Semantics Validate
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: unified-branch-network-as-code
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5

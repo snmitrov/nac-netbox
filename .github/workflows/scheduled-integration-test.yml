@@ -128,7 +128,7 @@ jobs:
       image: danischm/nac:0.1.6
       options: --user root
     timeout-minutes: 30
-    environment: unified-branch-terraform-jumpstart
+    environment: unified-branch-network-as-code
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
