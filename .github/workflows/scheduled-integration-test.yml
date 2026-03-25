@@ -1,18 +1,40 @@
 ###############################################################################
 # GitHub Actions Workflow – Scheduled Integration Tests
-# Runs every hour to verify the deployed configuration matches expectations.
+#
+# Usage:
+#   1. Trigger manually via "Run workflow" in the Actions tab
+#   2. Choose how often periodic checks should recur (hours) or "once"
+#   3. A lightweight hourly cron heartbeat runs tests at the chosen cadence
+#   4. No periodic runs happen until the workflow is triggered manually first
+#   5. Re-run manually at any time to change the interval or run ad-hoc
 ###############################################################################
 
 name: Scheduled Integration Test
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # every 6 hours
-  workflow_dispatch:       # allow manual trigger too
+    - cron: '0 * * * *'   # hourly heartbeat; actual cadence set by user input
+  workflow_dispatch:
+    inputs:
+      check_interval:
+        description: 'Periodic check interval in hours ("once" = single run, no recurrence)'
+        required: true
+        type: choice
+        default: '6'
+        options:
+          - 'once'
+          - '1'
+          - '6'
+          - '12'
+          - '24'
 
 concurrency:
   group: scheduled-integration-test
   cancel-in-progress: true
+
+permissions:
+  contents: write          # needed to persist the interval preference
+  actions:  read           # needed to query last successful run time
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -20,8 +42,87 @@ env:
   MERAKI_DASHBOARD_API_KEY:          ${{ secrets.MERAKI_API_KEY }}
 
 jobs:
+  # ── Gate: decide whether the actual test should run ─────────────────────
+  check-schedule:
+    name: Check Schedule
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Evaluate schedule
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # ── Manual trigger → always run & persist the chosen interval ──
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "▶ Manual trigger – will run integration tests."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+
+            INTERVAL="${{ inputs.check_interval }}"
+            mkdir -p .github
+            echo "$INTERVAL" > .github/integration-test-schedule
+
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .github/integration-test-schedule
+            if ! git diff --cached --quiet; then
+              git commit -m "ci: update integration-test interval → ${INTERVAL} [skip ci]"
+              git push
+              echo "  Saved interval preference: ${INTERVAL}"
+            fi
+            exit 0
+          fi
+
+          # ── Cron heartbeat → check whether a run is due ────────────────
+          CONFIG=".github/integration-test-schedule"
+          if [ ! -f "$CONFIG" ]; then
+            echo "⏭ No schedule configured – trigger the workflow manually first."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          INTERVAL=$(tr -d '[:space:]' < "$CONFIG")
+          if [ "$INTERVAL" = "once" ]; then
+            echo "⏭ Interval is 'once' – no periodic runs."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Query the last successful run of this workflow
+          LAST_ISO=$(gh run list \
+            --workflow "scheduled-integration-test.yml" \
+            --status success --limit 1 \
+            --json updatedAt -q '.[0].updatedAt' 2>/dev/null || true)
+
+          if [ -z "$LAST_ISO" ]; then
+            echo "▶ No previous successful run found – running now."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          LAST_EPOCH=$(date -d "$LAST_ISO" +%s)
+          NOW_EPOCH=$(date +%s)
+          ELAPSED_H=$(( (NOW_EPOCH - LAST_EPOCH) / 3600 ))
+
+          echo "  Last success: $LAST_ISO (${ELAPSED_H}h ago), interval: ${INTERVAL}h"
+          if [ "$ELAPSED_H" -ge "$INTERVAL" ]; then
+            echo "▶ Interval reached – running integration tests."
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            REMAINING=$(( INTERVAL - ELAPSED_H ))
+            echo "⏭ Next run in ~${REMAINING}h – skipping."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Integration test (only when the gate passes) ───────────────────────
   integration-test:
     name: Integration Test
+    needs: check-schedule
+    if: needs.check-schedule.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     container:
       image: danischm/nac:0.1.6
