@@ -1,0 +1,249 @@
+###############################################################################
+# GitHub Actions Workflow – Destroy Networks
+#
+# Tears down all Terraform-managed resources (networks and dependencies)
+# using `terraform destroy`. Triggered manually only, with a confirmation
+# gate to prevent accidental execution.
+###############################################################################
+
+name: Destroy Networks
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm you want to tear down all networks and dependencies'
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TF_VAR_meraki_api_key: ${{ secrets.MERAKI_API_KEY }}
+  TF_IN_AUTOMATION: "true"
+  MERAKI_API_KEY:                    ${{ secrets.MERAKI_API_KEY }}
+  MERAKI_DASHBOARD_API_KEY:          ${{ secrets.MERAKI_API_KEY }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────
+  # Job 1 – Safety gate: verify the user typed "destroy"
+  # ───────────────────────────────────────────────────────────────────────
+  confirm:
+    name: Confirm Destroy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation input
+        run: |
+          if [ "${{ inputs.confirm }}" != "destroy" ]; then
+            echo "❌ Confirmation failed. You must type 'destroy' to proceed."
+            echo "   Received: '${{ inputs.confirm }}'"
+            exit 1
+          fi
+          echo "✅ Confirmation accepted – proceeding with destroy."
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Job 2 – Prepare: merge data YAML files (needed for terraform to know
+  #         which resources exist)
+  # ───────────────────────────────────────────────────────────────────────
+  prepare:
+    name: Prepare – Merge Model
+    needs: [confirm]
+    runs-on: ubuntu-latest
+    container:
+      image: danischm/nac:0.1.6
+      options: --user root
+    timeout-minutes: 60
+    environment: unified-branch-network-as-code
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: grep -v '^\s*#' .env | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - name: Merge YAML data model
+        working-directory: workspaces
+        run: |
+          echo "📦 Merging data model for destroy context..."
+          terraform init
+          terraform apply -auto-approve
+
+          if [ ! -f merged_configuration.nac.yaml ]; then
+            echo "❌ merged_configuration.nac.yaml not found!"
+            exit 1
+          fi
+          chmod 644 merged_configuration.nac.yaml
+
+      - name: Upload merged configuration
+        uses: actions/upload-artifact@v5
+        with:
+          name: merged-config
+          path: workspaces/merged_configuration.nac.yaml
+          retention-days: 7
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Job 3 – Destroy Plan: show what will be destroyed before executing
+  # ───────────────────────────────────────────────────────────────────────
+  destroy-plan:
+    name: Destroy Plan
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    container:
+      image: danischm/nac:0.1.6
+      options: --user root
+    timeout-minutes: 60
+    environment: unified-branch-network-as-code
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: grep -v '^\s*#' .env | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - name: Download merged configuration
+        uses: actions/download-artifact@v5
+        with:
+          name: merged-config
+          path: workspaces
+
+      - name: Restore Terraform state cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            terraform.tfstate
+            terraform.tfstate.backup
+          key: terraform-state-${{ github.ref_name }}
+          restore-keys: |
+            terraform-state-
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform destroy plan
+        run: |
+          echo "═══════════════════════════════════════════════════"
+          echo "  Generating destroy plan..."
+          echo "═══════════════════════════════════════════════════"
+          terraform plan -destroy -out=destroy.tfplan -input=false 2>&1
+          terraform show -no-color destroy.tfplan > destroy_plan.txt
+
+          echo ""
+          echo "═══════════════════════════════════════════════════"
+          echo "  Resources to be destroyed:"
+          echo "═══════════════════════════════════════════════════"
+          grep -cE '# .* will be destroyed' destroy_plan.txt | xargs -I{} echo "  Total: {} resource(s)"
+          echo ""
+          grep -E '# .* will be destroyed' destroy_plan.txt || echo "  (none)"
+
+      - name: Upload destroy plan artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: destroy-plan-outputs
+          path: |
+            destroy.tfplan
+            destroy_plan.txt
+          retention-days: 7
+
+      - name: Upload state for destroy job
+        uses: actions/upload-artifact@v5
+        with:
+          name: terraform-state-pre-destroy
+          path: |
+            terraform.tfstate
+            terraform.tfstate.backup
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Job 4 – Destroy: execute terraform destroy
+  # ───────────────────────────────────────────────────────────────────────
+  destroy:
+    name: Destroy
+    needs: [destroy-plan]
+    runs-on: ubuntu-latest
+    container:
+      image: danischm/nac:0.1.6
+      options: --user root
+    timeout-minutes: 120
+    environment: unified-branch-network-as-code
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Load shared env vars
+        run: grep -v '^\s*#' .env | grep -v '^\s*$' >> "$GITHUB_ENV"
+
+      - name: Download merged configuration
+        uses: actions/download-artifact@v5
+        with:
+          name: merged-config
+          path: workspaces
+
+      - name: Download destroy plan
+        uses: actions/download-artifact@v5
+        with:
+          name: destroy-plan-outputs
+          path: .
+
+      - name: Restore Terraform state
+        uses: actions/download-artifact@v5
+        continue-on-error: true
+        with:
+          name: terraform-state-pre-destroy
+          path: .
+
+      - name: Terraform destroy
+        id: destroy
+        run: |
+          echo "═══════════════════════════════════════════════════"
+          echo "  🔥 Executing terraform destroy..."
+          echo "═══════════════════════════════════════════════════"
+          terraform init -input=false
+          terraform apply -input=false -auto-approve destroy.tfplan
+          echo "✅ All networks and dependencies have been destroyed."
+
+      - name: Save empty Terraform state to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            terraform.tfstate
+            terraform.tfstate.backup
+          key: terraform-state-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload final Terraform state
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: terraform-state-post-destroy
+          path: |
+            terraform.tfstate
+            terraform.tfstate.backup
+          retention-days: 90
+          overwrite: true
+
+      - name: Write Job Summary
+        if: always()
+        run: |
+          echo "## 🔥 Destroy Networks Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.destroy.outcome }}" = "success" ]; then
+            echo "✅ **All Terraform-managed networks and dependencies have been destroyed.**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ **Terraform destroy failed.** Check the logs for details." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f destroy_plan.txt ]; then
+            echo "<details><summary>📋 Destroy Plan</summary>" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat destroy_plan.txt >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+          fi
