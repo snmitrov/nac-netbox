@@ -6,7 +6,7 @@
 # gate to prevent accidental execution.
 ###############################################################################
 
-name: Destroy Networks
+name: Cleanup – Delete Branch Networks
 
 on:
   workflow_dispatch:
