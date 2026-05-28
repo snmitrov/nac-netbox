@@ -12,17 +12,13 @@
 # and add appl_comonitoring template to your pods_variables.nac.yaml file to apply to desired network.
 # ===========================================================================
 #
-# meraki:
-#   template:
-#     networks:
-#       - name: appl_comonitoring
-#         appliance:
-#           connectivity_monitoring_destinations:
-#                   - ip: "1.1.1.1"
-#                     description: Cloudflare DNS
-#                     default: true
-
-# Required: netascode/utils v2.0.0 yaml_merge requires every YAML file to be a
-# valid mapping at the top level. This stub satisfies that requirement while
-# keeping the template body above commented out.
-meraki: {}
+meraki:
+  template:
+    networks:
+      # Uncomment this template block to enable appliance connectivity monitoring.
+      # - name: appl_comonitoring
+      #   appliance:
+      #     connectivity_monitoring_destinations:
+      #       - ip: "1.1.1.1"
+      #         description: Cloudflare DNS
+      #         default: true
