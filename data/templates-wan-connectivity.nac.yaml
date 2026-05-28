@@ -21,3 +21,8 @@
 #                   - ip: "1.1.1.1"
 #                     description: Cloudflare DNS
 #                     default: true
+
+# Required: netascode/utils v2.0.0 yaml_merge requires every YAML file to be a
+# valid mapping at the top level. This stub satisfies that requirement while
+# keeping the template body above commented out.
+meraki: {}
