@@ -1,5 +1,5 @@
 ###############################################################################
-# GitHub Actions Workflow – bac-lab
+# GitHub Actions Workflow – nac-netbox
 ###############################################################################
 
 name: Deploy Small Branch as Code
